@@ -20,14 +20,15 @@ int conv2D(float* in, float* out, int data_size_X, int data_size_Y,
     // main convolution loop
 	for(int y = 0; y < data_size_Y; y++){ // the x coordinate of the output location we're focusing on
 		for(int x = 0; x < data_size_X; x++){ // the y coordinate of the output location we're focusing on
-			for(int j = -kern_cent_Y; j <= kern_cent_Y; j++){ // kernel unflipped x coordinate
-				for(int i = -kern_cent_X; i <= kern_cent_X; i++){ // kernel unflipped y coordinate
+			for(int j = 0; j < KERNY; j++){ // kernel unflipped x coordinate
+				for(int i = 0; i < KERNX; i++){ // kernel unflipped y coordinate
 					// only do the operation if not out of bounds
-					if(x+i>-1 && x+i<data_size_X && y+j>-1 && y+j<data_size_Y){
+					if(x+i-kern_cent_X>-1 && x+i-kern_cent_Y<data_size_X && y+j-kern_cent_Y>-1 && y+j-kern_cent_Y<data_size_Y){
 						//Note that the kernel is flipped
 						out[x+y*data_size_X] += 
-								kernel[(kern_cent_X-i)+(kern_cent_Y-j)*KERNX] * in[(x+i) + (y+j)*data_size_X];
-					}
+								kernel[i+j*KERNX] * in[(x+i-kern_cent_X) + (y+j-kern_cent_Y)*data_size_X];
+					
+}
 				}
 			}
 		}
