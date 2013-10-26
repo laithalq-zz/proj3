@@ -1,4 +1,5 @@
 #include <emmintrin.h>
+#include <stdio.h>
 #define KERNX 3 //this is the x-size of the kernel. It will always be odd.
 #define KERNY 3 //this is the y-size of the kernel. It will always be odd.
 int conv2D(float* in, float* out, int data_size_X, int data_size_Y,
@@ -9,14 +10,23 @@ int conv2D(float* in, float* out, int data_size_X, int data_size_Y,
     int kern_cent_X = (KERNX - 1)/2;
     // the y coordinate of the kernel's center
     int kern_cent_Y = (KERNY - 1)/2;
-/**	
-	float* flipped_kernel;
+	
 	int kernel_size = KERNX * KERNY;
+	float* flipped_kernel = calloc(kernel_size, sizeof(float));
 	for(int i = 0; i < kernel_size; i++){
-		flipped_kernel[i] = kernel[kernel_size - 1];
+		flipped_kernel[i] = kernel[kernel_size-1-i];
+	}
+	
+/**
+	printf("Original kernel:\n");
+	for(int i = 0; i < kernel_size; i++){
+		printf("%f ", kernel[i]);
+	}
+	printf("\nFlipped kernel: \n");
+	for(int i = 0; i < kernel_size; i++){
+		printf("%f ", flipped_kernel[i]);
 	}
 */
-    
     // main convolution loop
 	for(int y = 0; y < data_size_Y; y++){ // the x coordinate of the output location we're focusing on
 		for(int x = 0; x < data_size_X; x++){ // the y coordinate of the output location we're focusing on
