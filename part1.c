@@ -30,43 +30,31 @@ int conv2D(float* in, float* out, int data_size_X, int data_size_Y,
     __m128 kernel_row2 = _mm_loadu_ps(padded_flipped_kernel+KERNX+1);
     __m128 kernel_row3 = _mm_loadu_ps(padded_flipped_kernel+2*(KERNX+1));
 
-	__m128 matrix_row1 = _mm_setzero_ps();
-	__m128 matrix_row2 = _mm_setzero_ps();
-	__m128 matrix_row3 = _mm_setzero_ps();
+	__m128 matrix_row = _mm_setzero_ps();
 	
 	// Result registers for storing results of dot products
-	__m128 res_row1 = _mm_setzero_ps();
-	__m128 res_row2 = _mm_setzero_ps();
-	__m128 res_row3 = _mm_setzero_ps();
+	__m128 res_row = _mm_setzero_ps();
 	__m128 sum_res = _mm_setzero_ps();
 	const int dp_mask = 0b11111111;
 	float* sum = malloc(4 * sizeof(float));
 	//=================Main Convolution Loop=================
     for(int y = 0; y < data_size_Y; y++){ // the y coordinate of the output location we're focusing on
-    	for(int x = 0; x < data_size_X; x+=2){ // the x coordinate of the output location we're focusing on
-    		matrix_row1 = _mm_loadu_ps(padded_in + pad_amount_X + x - 1 + (pad_amount_Y + y - 1) * padded_size_X);
-    		matrix_row2 = _mm_loadu_ps(padded_in + pad_amount_X + x - 1 + (pad_amount_Y + y) * padded_size_X);
-    		matrix_row3 = _mm_loadu_ps(padded_in + pad_amount_X + x - 1 + (pad_amount_Y + y + 1) * padded_size_X);
-			
-			res_row1 = _mm_dp_ps(matrix_row1, kernel_row1, dp_mask);
-			res_row2 = _mm_dp_ps(matrix_row2, kernel_row2, dp_mask);
-			res_row3 = _mm_dp_ps(matrix_row3, kernel_row3, dp_mask);
-			
-			sum_res = _mm_add_ps(_mm_add_ps(res_row1, res_row2), res_row3);
+    	for(int x = 0; x < data_size_X; x+=1){ // the x coordinate of the output location we're focusing on
+    		matrix_row = _mm_loadu_ps(padded_in + pad_amount_X + x - 1 + (pad_amount_Y + y - 1) * padded_size_X);
+			res_row = _mm_dp_ps(matrix_row, kernel_row1, dp_mask);
+			sum_res = res_row;
+	
+			matrix_row = _mm_loadu_ps(padded_in + pad_amount_X + x - 1 + (pad_amount_Y + y) * padded_size_X);
+			res_row = _mm_dp_ps(matrix_row, kernel_row2, dp_mask);
+			sum_res = _mm_add_ps(res_row, sum_res);
+
+			matrix_row = _mm_loadu_ps(padded_in + pad_amount_X + x - 1 + (pad_amount_Y + y + 1) * padded_size_X);
+			res_row = _mm_dp_ps(matrix_row, kernel_row3, dp_mask);
+			sum_res = _mm_add_ps(res_row, sum_res);
+
 			_mm_storeu_ps(sum, sum_res);
 			out[x+y*data_size_X] = sum[0];
     		
-			matrix_row1 = _mm_loadu_ps(padded_in + pad_amount_X + x + (pad_amount_Y + y - 1) * padded_size_X);
-    		matrix_row2 = _mm_loadu_ps(padded_in + pad_amount_X + x + (pad_amount_Y + y) * padded_size_X);
-    		matrix_row3 = _mm_loadu_ps(padded_in + pad_amount_X + x + (pad_amount_Y + y + 1) * padded_size_X);
-			
-			res_row1 = _mm_dp_ps(matrix_row1, kernel_row1, dp_mask);
-			res_row2 = _mm_dp_ps(matrix_row2, kernel_row2, dp_mask);
-			res_row3 = _mm_dp_ps(matrix_row3, kernel_row3, dp_mask);
-			
-			sum_res = _mm_add_ps(_mm_add_ps(res_row1, res_row2), res_row3);
-			_mm_storeu_ps(sum, sum_res);
-			out[x+1+y*data_size_X] = sum[0];
     	}
    	}
 	free(padded_in);
