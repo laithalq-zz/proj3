@@ -14,18 +14,44 @@ int conv2D(float* in, float* out, int data_size_X, int data_size_Y,
 	
     int padded_size_X = data_size_X + 2, padded_size_Y = data_size_Y + 2;
 	int padded_size = padded_size_X * padded_size_Y;
-	float* padded_in = calloc(padded_size_X*padded_size_Y, sizeof(float));
+	float* padded_in = malloc(padded_size_X*padded_size_Y * sizeof(float));
 	
-	float flipped_kernel[9];
-	int pad_index = 1+padded_size_X, in_index = 0;
-	int last_in_row;
-	int last_in_padded = pad_index + padded_size - padded_size_X - padded_size_X - 2; 
-	for(; pad_index < last_in_padded; pad_index+=2){
-		last_in_row = pad_index + data_size_X;
+	
+	__m128 pad_row = _mm_setzero_ps();
+	int xx = 0;
+	float* start_of_last_row = padded_in + padded_size - padded_size_X;
+	for(; xx < data_size_X -1; xx+=4){
+		_mm_storeu_ps(padded_in + xx, pad_row);
+		_mm_storeu_ps(start_of_last_row + xx, pad_row);
+	}
+	for(; xx < data_size_X + 2; xx += 1){
+		padded_in[xx] = 0;
+	}
+	
+	int i = 0, j = padded_size_X;
+	for(;j < padded_size;j+=padded_size_X){
+		padded_in[i] = 0;
+		padded_in[j] = 0;
+		i+=padded_size_X;
+	}	
+	
+
+
+	
+	#pragma omp parallel for schedule(dynamic, 8) firstprivate(pad_row)
+	for(int y = 1; y <= data_size_Y; y++){
+		int pad_index = y*padded_size_X + 1, in_index = y*data_size_X - data_size_X;
+		int last_in_row = pad_index + data_size_X;
+		for(; pad_index < last_in_row - 3; pad_index += 4){
+			pad_row = _mm_loadu_ps(in+in_index);
+			_mm_storeu_ps(padded_in+pad_index,pad_row);
+			in_index += 4;	
+		}
 		for(; pad_index < last_in_row; pad_index++)
 			padded_in[pad_index] = in[in_index++];
 	}
    	//=================Kernel Flip=========================== 
+	float flipped_kernel[9];
     for(int i = 0,j=8; i < 9; i++,j--){
 		flipped_kernel[i] = kernel[j];
     }
